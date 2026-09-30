@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ru">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Последний поезд — Московское метро</title>
+	<link rel="stylesheet" href="css/style.css">
+	<script type="importmap">
+	{
+		"imports": {
+			"three": "./vendor/three/build/three.webgpu.js",
+			"three/webgpu": "./vendor/three/build/three.webgpu.js",
+			"three/tsl": "./vendor/three/build/three.tsl.js",
+			"three/addons/": "./vendor/three/addons/",
+			"three-mesh-bvh": "./vendor/three-mesh-bvh/src/core/MeshBVH.js"
+		}
+	}
+	</script>
+</head>
+<body>
+	<div id="app"></div>
+
+	<!-- HUD -->
+	<div id="hud" class="hidden">
+		<div id="crosshair"><i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i><b class="dot"></b></div>
+		<div id="hitmarker"><i></i><i></i><i></i><i></i></div>
+		<div id="scope" class="hidden">
+			<svg viewBox="-500 -500 1000 1000" preserveAspectRatio="xMidYMid slice">
+				<defs>
+					<radialGradient id="lens" cx="0" cy="0" r="470" gradientUnits="userSpaceOnUse">
+						<stop offset="0.82" stop-color="#000" stop-opacity="0"/>
+						<stop offset="1" stop-color="#000" stop-opacity="0.85"/>
+					</radialGradient>
+					<mask id="hole"><rect x="-5000" y="-5000" width="10000" height="10000" fill="#fff"/><circle r="470" fill="#000"/></mask>
+				</defs>
+				<rect x="-5000" y="-5000" width="10000" height="10000" fill="#000" mask="url(#hole)"/>
+				<circle r="470" fill="url(#lens)"/>
+				<!-- PSO-1 reticle -->
+				<g stroke="#111" stroke-width="3" fill="none">
+					<path d="M0 -8 L-9 10 M0 -8 L9 10"/>
+					<path d="M0 22 L-7 36 M0 22 L7 36"/>
+					<path d="M0 50 L-7 64 M0 50 L7 64"/>
+					<path d="M0 78 L-7 92 M0 78 L7 92"/>
+					<line x1="-260" y1="0" x2="-30" y2="0"/>
+					<line x1="30" y1="0" x2="260" y2="0"/>
+					<line x1="0" y1="120" x2="0" y2="300"/>
+					<g stroke-width="2">
+						<line x1="-230" y1="-8" x2="-230" y2="8"/><line x1="-180" y1="-8" x2="-180" y2="8"/><line x1="-130" y1="-8" x2="-130" y2="8"/><line x1="-80" y1="-8" x2="-80" y2="8"/>
+						<line x1="230" y1="-8" x2="230" y2="8"/><line x1="180" y1="-8" x2="180" y2="8"/><line x1="130" y1="-8" x2="130" y2="8"/><line x1="80" y1="-8" x2="80" y2="8"/>
+						<path d="M-240 170 Q-150 110 -60 160" /><text x="-250" y="195" fill="#111" stroke="none" font-size="16" font-family="monospace">2 4 6 8 10</text>
+					</g>
+				</g>
+			</svg>
+		</div>
+		<div id="damage"></div>
+		<div id="lowhp"></div>
+		<div id="flash"></div>
+		<div id="dmgdirs"></div>
+
+		<div id="topbar">
+			<div id="station-name">КОМСОМОЛЬСКАЯ</div>
+			<div id="wave">ВОЛНА 1</div>
+			<div id="enemies-left">ПРОТИВНИКИ: 0</div>
+		</div>
+		<div id="score">0</div>
+
+		<div id="health">
+			<div class="label">ЗДОРОВЬЕ</div>
+			<div class="bar"><div class="fill"></div><div class="ghost"></div></div>
+			<div class="num">100</div>
+		</div>
+		<div id="ammo">
+			<div id="weapon-name">DESERT EAGLE</div>
+			<div class="row"><span id="mag">7</span><span class="sep">/</span><span id="reserve">35</span></div>
+			<div id="weapon-slots"></div>
+		</div>
+
+		<div id="objective"></div>
+		<div id="subtitles"></div>
+		<div id="banner"><div class="big"></div><div class="small"></div></div>
+		<div id="killfeed"></div>
+		<div id="fps"></div>
+	</div>
+
+	<!-- Menu -->
+	<div id="menu" class="screen">
+		<div class="menu-bg"></div>
+		<div class="menu-inner">
+			<div class="logo-m">М</div>
+			<h1>ПОСЛЕДНИЙ ПОЕЗД</h1>
+			<div class="subtitle">Московский метрополитен · ночная смена</div>
+			<div id="loading"><div class="bar"><div class="fill"></div></div><div class="txt">Загрузка…</div></div>
+			<button id="play" class="hidden">ИГРАТЬ</button>
+			<div id="settings" class="hidden">
+				<label>Графика
+					<select id="quality">
+						<option value="ultra">Ультра (SSGI + SSR + TRAA)</option>
+						<option value="high">Высокая</option>
+						<option value="medium">Средняя</option>
+						<option value="low">Низкая</option>
+					</select>
+				</label>
+				<label>Чувствительность мыши <input id="sens" type="range" min="0.2" max="3" step="0.05" value="1"></label>
+				<label>Поле зрения <input id="fov" type="range" min="60" max="100" step="1" value="78"></label>
+				<label>Громкость <input id="vol" type="range" min="0" max="1" step="0.01" value="0.8"></label>
+				<label class="chk"><input id="voices" type="checkbox" checked> Озвучка противниц (синтез речи)</label>
+			</div>
+			<div id="gpuinfo"></div>
+			<div class="controls">
+				<div><b>WASD</b> движение</div><div><b>Мышь</b> обзор / огонь</div>
+				<div><b>ПКМ</b> прицел</div><div><b>R</b> перезарядка</div>
+				<div><b>1–4 / колесо</b> оружие</div><div><b>Shift</b> бег</div>
+				<div><b>Ctrl / C</b> присесть</div><div><b>Пробел</b> прыжок</div>
+				<div><b>Esc</b> пауза</div><div><b>F</b> фонарь</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="gameover" class="screen hidden">
+		<div class="menu-inner">
+			<h1 class="red">ВЫ ПОГИБЛИ</h1>
+			<div id="stats"></div>
+			<button id="restart">ЕЩЁ РАЗ</button>
+		</div>
+	</div>
+
+	<div id="error" class="hidden"></div>
+
+	<script type="module" src="./src/main.js"></script>
+</body>
+</html>
