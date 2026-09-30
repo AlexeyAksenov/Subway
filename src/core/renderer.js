@@ -3,7 +3,7 @@
 // bloom and temporal reprojection AA (TRAA). Falls back to WebGL2 when WebGPU is missing.
 import * as THREE from 'three/webgpu';
 import {
-	pass, mrt, output, normalView, diffuseColor, velocity, metalness, roughness,
+	pass, mrt, output, normalView, velocity, metalness, roughness,
 	vec2, vec4, float, uniform, packNormalToRGB, unpackRGBToNormal, sample,
 	screenUV, smoothstep, renderOutput
 } from 'three/tsl';
@@ -118,7 +118,6 @@ export class GameRenderer {
 		const scenePass = pass( scene, camera );
 
 		const outputs = { output };
-		if ( Q.ssgi ) outputs.diffuseColor = diffuseColor;
 		if ( Q.ssgi || Q.ssr ) outputs.normal = packNormalToRGB( normalView );
 		if ( Q.ssr ) outputs.metalrough = vec2( metalness, roughness );
 		if ( Q.taa ) outputs.velocity = velocity;
@@ -136,7 +135,6 @@ export class GameRenderer {
 
 		}
 
-		if ( outputs.diffuseColor ) scenePass.getTexture( 'diffuseColor' ).type = THREE.UnsignedByteType;
 		if ( outputs.metalrough ) scenePass.getTexture( 'metalrough' ).type = THREE.UnsignedByteType;
 
 		let color = col;
@@ -152,8 +150,9 @@ export class GameRenderer {
 			gi.giIntensity.value = 3.0;
 			gi.useTemporalFiltering = Q.taa;
 			this.ssgiNode = gi;
-			const dif = scenePass.getTextureNode( 'diffuseColor' );
-			color = vec4( col.rgb.mul( gi.getAONode() ).add( dif.rgb.mul( gi.getGINode().rgb ) ), col.a );
+			// no separate albedo attachment (WebGPU caps colour attachments at 32 bytes/pixel):
+			// the lit colour stands in for albedo when applying the bounced light
+			color = vec4( col.rgb.mul( gi.getAONode() ).add( col.rgb.mul( gi.getGINode().rgb ).mul( 0.35 ) ), col.a );
 
 		}
 

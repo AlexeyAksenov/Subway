@@ -57,6 +57,7 @@ class Game {
 			const el = $( 'error' );
 			el.textContent = 'WebGPU сообщил об ошибке (' + msg + ').\nПерезапуск в режиме WebGL 2…';
 			el.classList.remove( 'hidden' );
+			try { sessionStorage.setItem( 'metro-webgpu-error', String( msg ).slice( 0, 300 ) ); } catch ( e ) { /* ignore */ }
 			setTimeout( () => { const u = new URL( location.href ); u.searchParams.set( 'webgl', '1' ); location.href = u.toString(); }, 1800 );
 
 		};
@@ -72,18 +73,21 @@ class Game {
 		const saved = this.loadSettings();
 		gr.quality = params.get( 'q' ) || saved.quality || ( gr.isWebGPU ? 'ultra' : 'medium' );
 		$( 'quality' ).value = gr.quality;
-		$( 'gpuinfo' ).textContent = `${ gr.isWebGPU ? 'WebGPU' : 'WebGL 2 (WebGPU недоступен)' }${ gr.gpuName ? ' · ' + gr.gpuName : '' } · three.js r${ THREE.REVISION }`;
+		let why = '';
+		try { why = sessionStorage.getItem( 'metro-webgpu-error' ) || ''; } catch ( e ) { /* ignore */ }
+		const gpuMode = gr.isWebGPU ? 'WebGPU' : params.has( 'webgl' ) ? ( why ? `WebGL 2 (WebGPU отключён после ошибки: ${ why })` : 'WebGL 2 (выбран вручную)' ) : 'WebGL 2 (WebGPU недоступен в браузере)';
+		$( 'gpuinfo' ).textContent = `${ gpuMode }${ gr.gpuName ? ' · ' + gr.gpuName : '' } · three.js r${ THREE.REVISION }`;
 
 		setLoading( 0.12, 'Прокладываем тоннели…' );
 		await nextFrame();
-		this.pool = new LightPool( scene, 26 );
+		this.pool = new LightPool( scene, 14 );
 		this.infra = buildInfrastructure();
 		scene.add( this.infra.group );
 		ctx.infra = this.infra;
 		this.hemi = new THREE.HemisphereLight( 0xffffff, 0x222222, 0.1 );
 		scene.add( this.hemi );
 		// fixed extra lights: muzzle flashes & flashlight (light count never changes → no shader recompiles)
-		const flash = [ new THREE.PointLight( 0xffb060, 0, 14, 2 ), new THREE.PointLight( 0xffb060, 0, 14, 2 ) ];
+		const flash = [ new THREE.PointLight( 0xffb060, 0, 14, 2 ) ];
 		flash.forEach( ( l ) => scene.add( l ) );
 		this.flashlight = new THREE.SpotLight( 0xfff6e6, 0, 45, 0.38, 0.45, 1.4 );
 		camera.add( this.flashlight );
@@ -145,8 +149,8 @@ class Game {
 		this.player.update( 0.016, this.input );
 		try {
 
-			gr.render(); // sets up the post-processing chain (render targets, MRT formats)
-			await gr.scenePass.compileAsync( gr.renderer ); // compiles scene materials for the MRT pass in parallel
+			// compile scene materials for the MRT pass in parallel (never block loading forever)
+			await Promise.race( [ gr.scenePass.compileAsync( gr.renderer ), new Promise( ( r ) => setTimeout( r, 20000 ) ) ] );
 			gr.render();
 
 		} catch ( e ) { console.warn( e ); }

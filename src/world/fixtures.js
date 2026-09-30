@@ -167,7 +167,7 @@ export class LampCluster {
 		this.alive = this.bulbLocal.map( () => true );
 		this.aliveCount = this.bulbLocal.length;
 		this.light = o.light;
-		this.lightBase = o.light ? o.light.intensity : 0;
+		if ( this.light ) ( this.light.userData.members ||= [] ).push( this );
 		this.lightOffset = o.lightOffset ? o.lightOffset.clone() : new THREE.Vector3( 0, - 1.5, 0 );
 		this.swing = o.swing !== false;
 		this.len = o.pendulumLength || 1.6;
@@ -313,20 +313,30 @@ export class LampCluster {
 		}
 
 		if ( this.faulty && ! this.dead && Math.random() < dt * 0.35 ) this.flicker = 0.15 + Math.random() * 0.4;
+		const frac = this.aliveCount / this.bulbLocal.length;
+		let k = frac;
+		if ( this.flicker > 0 ) {
+
+			this.flicker -= dt;
+			k *= Math.random() < 0.5 ? 0.15 : 1.1;
+
+		}
+
+		this.lightK = k;
+		if ( this.bulbMat.userData.intensity && ! this.dead ) this.bulbMat.userData.intensity.value = this.flicker > 0 ? k / Math.max( frac, 0.01 ) : 1;
 		if ( this.light ) {
 
-			const frac = this.aliveCount / this.bulbLocal.length;
-			let k = frac;
-			if ( this.flicker > 0 ) {
+			// a light may be shared by several fixtures: the first one drives it with the average state
+			const members = this.light.userData.members;
+			if ( members[ members.length - 1 ] === this ) {
 
-				this.flicker -= dt;
-				k *= Math.random() < 0.5 ? 0.15 : 1.1;
+				let sum = 0;
+				for ( const m of members ) sum += m.lightK ?? 1;
+				this.light.intensity = ( this.light.userData.base || 0 ) * sum / members.length;
 
 			}
 
-			this.light.intensity = this.lightBase * k;
-			if ( this.bulbMat.userData.intensity && ! this.dead ) this.bulbMat.userData.intensity.value = this.flicker > 0 ? k / Math.max( frac, 0.01 ) : 1;
-			if ( this.swing ) {
+			if ( this.swing && members.length === 1 ) {
 
 				_v.copy( this.lightOffset ).applyMatrix4( this.pivot.matrixWorld );
 				this.light.position.copy( _v );

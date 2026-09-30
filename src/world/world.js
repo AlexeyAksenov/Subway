@@ -131,9 +131,39 @@ export class StationWorld {
 
 	}
 
+	/**
+	 * Request a light. Neighbouring fixtures along the station share one light so the total
+	 * light count stays small (every light costs shader time on every pixel and compile time).
+	 */
 	light( x, y, z, color, intensity, distance = 18 ) {
 
-		return this.lightPool.take( x, y, z, color, intensity, distance );
+		this.taken ||= [];
+		for ( const l of this.taken ) {
+
+			const a = l.userData.anchor;
+			if ( Math.abs( a.z - z ) < 2 && Math.abs( a.y - y ) < 2.5 && Math.abs( a.x - x ) < 23 ) {
+
+				const n = ++ l.userData.count;
+				l.userData.sum.add( new THREE.Vector3( x, y, z ) );
+				l.position.copy( l.userData.sum ).divideScalar( n );
+				l.userData.base = l.userData.single * Math.sqrt( n ) * 1.15;
+				l.intensity = l.userData.base;
+				l.distance = distance * ( 1 + 0.35 * ( n - 1 ) );
+				return l;
+
+			}
+
+		}
+
+		const l = this.lightPool.take( x, y, z, color, intensity, distance );
+		if ( ! l ) return null;
+		l.userData.anchor = new THREE.Vector3( x, y, z );
+		l.userData.sum = new THREE.Vector3( x, y, z );
+		l.userData.count = 1;
+		l.userData.single = intensity;
+		l.userData.members = [];
+		this.taken.push( l );
+		return l;
 
 	}
 

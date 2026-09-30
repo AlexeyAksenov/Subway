@@ -332,9 +332,9 @@ export class Train {
 	buildLights( scene ) {
 
 		this.inLights = [];
-		for ( let i = 0; i < 2; i ++ ) {
+		for ( let i = 0; i < 1; i ++ ) {
 
-			const l = new THREE.PointLight( 0xfff4e8, 0, 14, 2 );
+			const l = new THREE.PointLight( 0xfff4e8, 0, 18, 2 );
 			scene.add( l );
 			this.inLights.push( l );
 
@@ -591,11 +591,11 @@ export class Train {
 		const near = ci !== null ? ci : this.nearestCar( playerPos );
 		const flick = this.flicker > 0 ? ( Math.random() < 0.5 ? 0.05 : 1 ) : 1;
 		if ( this.flicker > 0 ) this.flicker -= dt;
-		for ( let i = 0; i < 2; i ++ ) {
+		for ( let i = 0; i < this.inLights.length; i ++ ) {
 
 			const l = this.inLights[ i ];
-			l.position.set( this.x + this.carX[ near ] + ( i ? 5 : - 5 ), 1.95, this.z );
-			l.intensity = this.visible ? 9 * flick : 0;
+			l.position.set( this.x + this.carX[ near ], 1.95, this.z );
+			l.intensity = this.visible ? 14 * flick : 0;
 
 		}
 
