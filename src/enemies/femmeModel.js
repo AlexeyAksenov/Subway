@@ -629,6 +629,7 @@ export const OUTFITS = {
 	red_dress: { eyes: 0x3a78b8, shadow: '#7a3a3a', skin: 0xf3cdb4, hair: [ 'long', 0xe6c27a ], lips: 0xb0101c, glasses: false, dress: { top: 1.3, hem: 0.66, color: 0xb0101a, rough: 0.35, sheen: 0.8 }, legs: 'stockings', shoes: 0x8a0a12 },
 	black_leather: { eyes: 0x4a8a5a, shadow: '#3a3a44', skin: 0xecc3a6, hair: [ 'ponytail', 0x120d0a ], lips: 0x7a0c16, glasses: true, catsuit: { color: 0x0c0c0e, rough: 0.28, clearcoat: 1 }, shoes: 0x0a0a0a },
 	gold_gown: { eyes: 0x5a3a1a, shadow: '#a8742a', skin: 0xd9a488, hair: [ 'waves', 0x6a2c14 ], lips: 0xa01830, glasses: false, dress: { top: 1.3, hem: 0.1, color: 0xd6a640, sequins: true, slit: true }, legs: 'bare', shoes: 0xd6a640 },
+	black_blazer: { eyes: 0x5a3a1a, shadow: '#5a4a40', skin: 0xe9c2a6, hair: [ 'long', 0x4a2d1b ], lips: 0xa85a5e, glasses: false, suit: { color: 0x0d0d10, rough: 0.55 }, shoes: 0x0a0a0a, doubleBreasted: true },
 	white_suit: { eyes: 0x6a8ab8, shadow: '#6a5a6a', skin: 0xf6d6c3, hair: [ 'bob', 0xf2e8cf ], lips: 0xc0182a, glasses: true, suit: { color: 0xf1ede6, rough: 0.6 }, shoes: 0x111111 },
 	red_coat: { eyes: 0x4a6a3a, shadow: '#5a3a2a', skin: 0xeec9b0, hair: [ 'long', 0x3a2215 ], lips: 0x9a1020, glasses: false, coat: { color: 0xc8231e, hem: 0.62 }, dressUnder: 0x15151a, legs: 'stockings', shoes: 0x111111 },
 	emerald: { eyes: 0x3a2412, shadow: '#1f5a3a', skin: 0xc58d6e, hair: [ 'bun', 0x0b0806 ], lips: 0x8e0f25, glasses: false, dress: { top: 1.3, hem: 0.58, color: 0x0d6b4a, rough: 0.3, sheen: 0.9 }, legs: 'bare', shoes: 0x0d6b4a }
@@ -735,7 +736,11 @@ function buildOutfitGeometry( key ) {
 
 		// lapels (V-neck) & gold buttons
 		for ( const s of [ - 1, 1 ] ) add( 'outfit', rigid( new THREE.BoxGeometry( 0.05, 0.2, 0.012 ).rotateZ( s * 0.35 ).translate( s * 0.05, 1.33, 0.108 ), 'chest' ) );
-		for ( let i = 0; i < 2; i ++ ) add( 'gold', rigid( new THREE.SphereGeometry( 0.008, 8, 6 ).translate( 0, 1.16 + i * 0.06, 0.1 ), 'spine' ) );
+		if ( o.doubleBreasted ) {
+
+			for ( let i = 0; i < 3; i ++ ) for ( const s of [ - 1, 1 ] ) add( 'gold', rigid( new THREE.CylinderGeometry( 0.009, 0.009, 0.004, 14 ).rotateX( Math.PI / 2 ).translate( s * 0.045, 1.1 + i * 0.07, 0.1 + i * 0.004 ), 'spine' ) );
+
+		} else for ( let i = 0; i < 2; i ++ ) add( 'gold', rigid( new THREE.SphereGeometry( 0.008, 8, 6 ).translate( 0, 1.16 + i * 0.06, 0.1 ), 'spine' ) );
 
 	}
 

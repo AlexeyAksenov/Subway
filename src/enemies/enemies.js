@@ -17,7 +17,7 @@ const rnd = ( a, b ) => a + Math.random() * ( b - a );
 export const TYPES = {
 	glam: { weapon: 'pistol', hp: 80, walk: 1.45, run: 3.1, acc: 0.24, interval: [ 0.8, 1.4 ], burst: [ 1, 2 ], gap: 0.3, dmg: 7, pellets: 1, range: [ 7, 22 ], mag: 12, reload: 1.8, sound: 'pistol', outfits: [ 'red_dress', 'emerald', 'red_coat', 'gold_gown' ], score: 100 },
 	agent: { weapon: 'smg', hp: 100, walk: 1.5, run: 3.3, acc: 0.2, interval: [ 1.0, 1.7 ], burst: [ 3, 6 ], gap: 0.09, dmg: 5, pellets: 1, range: [ 6, 18 ], mag: 30, reload: 2.2, sound: 'smg', outfits: [ 'black_leather' ], score: 150 },
-	boss: { weapon: 'shotgun', hp: 260, walk: 1.35, run: 2.9, acc: 0.55, interval: [ 1.2, 1.7 ], burst: [ 1, 1 ], gap: 0.3, dmg: 5, pellets: 7, range: [ 2.5, 10 ], mag: 6, reload: 2.6, sound: 'shotgun', outfits: [ 'white_suit' ], score: 400, boss: true }
+	boss: { weapon: 'shotgun', hp: 260, walk: 1.35, run: 2.9, acc: 0.55, interval: [ 1.2, 1.7 ], burst: [ 1, 1 ], gap: 0.3, dmg: 5, pellets: 7, range: [ 2.5, 10 ], mag: 6, reload: 2.6, sound: 'shotgun', outfits: [ 'white_suit', 'black_blazer' ], score: 400, boss: true }
 };
 
 // ------------------------------------------------------------------ ray vs capsule
