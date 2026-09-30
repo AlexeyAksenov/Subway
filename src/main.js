@@ -132,7 +132,27 @@ class Game {
 		gr.setScene( scene, camera );
 		setLoading( 0.8, 'Компиляция шейдеров…' );
 		await nextFrame();
-		try { await gr.renderer.compileAsync( scene, camera ); } catch ( e ) { console.warn( e ); }
+		// pre-warm: every outfit, enemy gun and the train are compiled now instead of stuttering later
+		const { Femme, OUTFITS } = await import( './enemies/femmeModel.js' );
+		const { buildEnemyGun } = await import( './player/weaponModels.js' );
+		const warm = new THREE.Group();
+		Object.keys( OUTFITS ).forEach( ( k, i ) => { const f = new Femme( k ); f.root.position.set( - 8 - i, 0, 3 ); warm.add( f.root ); } );
+		[ 'pistol', 'smg', 'shotgun' ].forEach( ( k, i ) => { const g = buildEnemyGun( k ); g.position.set( - 8 - i, 1, 2 ); warm.add( g ); } );
+		scene.add( warm );
+		this.train.group.visible = true;
+		this.train.x = - 20; this.train.group.position.x = - 20;
+		this.player.spawn( - 6, 0, - Math.PI / 2 );
+		this.player.update( 0.016, this.input );
+		try {
+
+			gr.render(); // sets up the post-processing chain (render targets, MRT formats)
+			await gr.scenePass.compileAsync( gr.renderer ); // compiles scene materials for the MRT pass in parallel
+			gr.render();
+
+		} catch ( e ) { console.warn( e ); }
+
+		scene.remove( warm );
+		this.train.hide();
 		setLoading( 1, 'Готово' );
 		this.bindUI();
 		this.player.spawn( - 6, 0, - Math.PI / 2 );
@@ -195,8 +215,8 @@ class Game {
 
 	async start() {
 
+		this.input.lock(); // must run inside the click's user activation
 		try { await this.audio.init(); } catch ( e ) { console.warn( 'audio', e ); }
-		this.input.lock();
 		if ( ! this.started ) {
 
 			this.started = true;
@@ -228,6 +248,21 @@ class Game {
 		const look = buildStation( W, info.id, { variant: Math.floor( index / STATIONS.length ) } );
 		addInfrastructureCollision( W, this.infra );
 		W.finalize();
+		// later laps: the line has been fought over — dead bulbs, faulty flickering fixtures, thicker haze
+		const lap = Math.floor( index / STATIONS.length );
+		if ( lap > 0 ) {
+
+			for ( const b of W.breakables ) {
+
+				if ( ! b.bulbLocal ) continue;
+				for ( let i = 0; i < b.bulbLocal.length; i ++ ) if ( Math.random() < Math.min( 0.45, 0.15 * lap ) ) b.preBreak( i );
+				if ( Math.random() < 0.3 ) b.faulty = true;
+
+			}
+
+			look.fog = { color: look.fog.color, density: look.fog.density * ( 1 + 0.35 * lap ) };
+
+		}
 		this.scene.add( W.group );
 		ctx.world = W;
 		this.look = look;
@@ -417,6 +452,17 @@ class Game {
 
 			if ( this.state === 'departing' ) {
 
+				if ( T.carAt( this.player.position.x, this.player.position.z ) === null ) {
+
+					// the passenger stayed on the platform: the doors open again
+					T.openDoors();
+					this.state = 'boarding';
+					this.boardT = 0;
+					this.hud.objective( 'Садитесь в поезд' );
+					return;
+
+				}
+
 				T.depart();
 				this.state = 'travel';
 				this.hud.objective( null );
@@ -452,7 +498,7 @@ class Game {
 		T.v = Math.max( T.v, 15 );
 		T.hornPlayed = true;
 		this.swapped = false;
-		this.gr.renderer.compileAsync?.( this.scene, this.camera )?.catch?.( () => {} );
+		this.gr.scenePass?.compileAsync?.( this.gr.renderer )?.catch?.( () => {} );
 
 	}
 

@@ -153,7 +153,7 @@ export class Train {
 		this.mLED.colorNode = color( 1, 1, 1 ).mul( 5 );
 		this.mInteriorGlow = new THREE.MeshBasicNodeMaterial();
 		this.lightUniform = { value: 1 };
-		this.mInteriorGlow.colorNode = color( 1.0, 0.98, 0.94 ).mul( 4.5 );
+		this.mInteriorGlow.colorNode = color( 1.0, 0.98, 0.94 ).mul( 2.4 );
 		this.mHead = new THREE.MeshBasicNodeMaterial(); this.mHead.colorNode = color( 1, 1, 1 ).mul( 12 );
 		this.mTail = new THREE.MeshBasicNodeMaterial(); this.mTail.colorNode = color( 1, 0.05, 0.05 ).mul( 6 );
 		this.mBoard = new THREE.MeshBasicNodeMaterial(); this.mBoard.colorNode = texture( this.led, uv() ).rgb.mul( 3.5 );
@@ -486,6 +486,17 @@ export class Train {
 		}
 
 		return best;
+
+	}
+
+	/** true if the carriage body (not a window or an open door) is between a and b */
+	blocksLine( a, b ) {
+
+		if ( ! this.visible ) return false;
+		_v.subVectors( b, a );
+		const d = _v.length();
+		const h = this.raycast( a, _v.divideScalar( d ).clone(), d );
+		return !! h;
 
 	}
 

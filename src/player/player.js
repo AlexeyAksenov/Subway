@@ -152,6 +152,14 @@ export class Player {
 
 		}
 
+		if ( ctx.enemies ) for ( const e of ctx.enemies.list ) {
+
+			if ( ! e.alive ) continue;
+			const dx = nx - e.pos.x, dz = nz - e.pos.z, d = Math.hypot( dx, dz ), r = this.radius + 0.3;
+			if ( d < r && d > 1e-4 ) { nx = e.pos.x + dx / d * r; nz = e.pos.z + dz / d * r; }
+
+		}
+
 		const floor = 0;
 		if ( ny <= floor ) {
 

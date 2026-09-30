@@ -264,6 +264,18 @@ export class LampCluster {
 
 	}
 
+	/** Silently remove a bulb (pre-damaged stations on later laps). */
+	preBreak( i ) {
+
+		if ( ! this.alive[ i ] ) return;
+		this.alive[ i ] = false;
+		this.aliveCount --;
+		this.bulbs.setMatrixAt( i, _zero );
+		this.bulbs.instanceMatrix.needsUpdate = true;
+		if ( this.aliveCount <= 0 ) { this.dead = true; if ( this.bulbMat.userData.intensity ) this.bulbMat.userData.intensity.value = 0; }
+
+	}
+
 	breakBulb( i, worldPos, dir ) {
 
 		this.alive[ i ] = false;
@@ -300,6 +312,7 @@ export class LampCluster {
 
 		}
 
+		if ( this.faulty && ! this.dead && Math.random() < dt * 0.35 ) this.flicker = 0.15 + Math.random() * 0.4;
 		if ( this.light ) {
 
 			const frac = this.aliveCount / this.bulbLocal.length;

@@ -142,7 +142,7 @@ class Enemy {
 			const eye = new THREE.Vector3( this.pos.x, 1.6, this.pos.z );
 			const pe = player.camera.position;
 			const saw = this.canSee;
-			this.canSee = player.alive && dist < 75 && world.visible( eye, pe );
+			this.canSee = player.alive && dist < 75 && world.visible( eye, pe ) && ! ctx.train?.blocksLine?.( eye, pe );
 			if ( this.canSee ) {
 
 				this.lastSeen.copy( pp ); this.lastSeenT = ctx.time;

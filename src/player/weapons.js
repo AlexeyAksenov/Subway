@@ -35,7 +35,7 @@ export const DEFS = {
 		name: 'СВД (ПСО-1)', short: 'СВД', slot: 4, build: buildSVD, auto: false, interval: 0.4, damage: 160, headMul: 2.5, limbMul: 0.85,
 		mag: 10, reserve: 50, spread: 0.035, adsSpread: 0.0002, moveSpread: 0.05, sound: 'svd', pellets: 1,
 		recoil: { pitch: 0.085, yaw: 0.02, kick: 0.08, rot: 0.15, shake: 0.5 }, reload: 2.7,
-		hip: [ 0.13, - 0.16, - 0.38 ], adsZ: - 0.2, adsFov: 0.2, scope: true, tracer: 0xffe0a0, flash: 1.3, casing: 'brass', penetrate: 3
+		hip: [ 0.15, - 0.18, - 0.44 ], adsZ: - 0.2, adsFov: 0.2, scope: true, tracer: 0xffe0a0, flash: 1.3, casing: 'brass', penetrate: 3
 	}
 };
 export const ORDER = [ 'deagle', 'ak', 'shotgun', 'svd' ];
