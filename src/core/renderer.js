@@ -51,7 +51,9 @@ export class GameRenderer {
 			if ( type === 'error' && this.isWebGPU && /GPUValidationError|pipeline creation failed|WGSL|Device Lost/i.test( String( message ) ) ) {
 
 				this.gpuErrors ++;
-				if ( this.gpuErrors >= 3 ) this.onWebGPUFailure?.( String( message ) );
+				( this.gpuErrorLog ||= [] ).push( String( message ).replace( /\s+/g, ' ' ).slice( 0, 500 ) );
+				// report the FIRST error: later ones only say "invalid due to a previous error"
+				if ( this.gpuErrors >= 3 ) this.onWebGPUFailure?.( this.gpuErrorLog[ 0 ] );
 
 			}
 

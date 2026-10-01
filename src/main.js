@@ -54,11 +54,25 @@ class Game {
 
 			if ( this.fellBack || params.has( 'webgl' ) ) return;
 			this.fellBack = true;
+			// step down the effects first (most likely culprit), WebGL 2 only as the last resort
+			const order = [ 'ultra', 'high', 'medium', 'low' ];
+			const cur = order.indexOf( gr.quality );
+			const next = cur >= 0 && cur < order.length - 1 ? order[ cur + 1 ] : null;
+			let log = '';
+			try { log = sessionStorage.getItem( 'metro-webgpu-log' ) || ''; } catch ( e ) { /* ignore */ }
+			log += `[${ gr.quality }] ${ msg }\n`;
+			try { sessionStorage.setItem( 'metro-webgpu-log', log ); sessionStorage.setItem( 'metro-webgpu-error', String( msg ).slice( 0, 500 ) ); } catch ( e ) { /* ignore */ }
+			console.error( 'WebGPU failure log:\n' + log );
 			const el = $( 'error' );
-			el.textContent = 'WebGPU сообщил об ошибке (' + msg + ').\nПерезапуск в режиме WebGL 2…';
+			el.textContent = 'WebGPU сообщил об ошибке:\n' + msg + '\n\n' + ( next ? `Перезапуск на WebGPU с качеством «${ next }»…` : 'Перезапуск в режиме WebGL 2…' );
 			el.classList.remove( 'hidden' );
-			try { sessionStorage.setItem( 'metro-webgpu-error', String( msg ).slice( 0, 300 ) ); } catch ( e ) { /* ignore */ }
-			setTimeout( () => { const u = new URL( location.href ); u.searchParams.set( 'webgl', '1' ); location.href = u.toString(); }, 1800 );
+			setTimeout( () => {
+
+				const u = new URL( location.href );
+				if ( next ) u.searchParams.set( 'q', next ); else u.searchParams.set( 'webgl', '1' );
+				location.href = u.toString();
+
+			}, 2500 );
 
 		};
 		await gr.init( { forceWebGL: params.has( 'webgl' ) } );
@@ -73,10 +87,13 @@ class Game {
 		const saved = this.loadSettings();
 		gr.quality = params.get( 'q' ) || saved.quality || ( gr.isWebGPU ? 'ultra' : 'medium' );
 		$( 'quality' ).value = gr.quality;
-		let why = '';
-		try { why = sessionStorage.getItem( 'metro-webgpu-error' ) || ''; } catch ( e ) { /* ignore */ }
+		let why = '', wlog = '';
+		try { why = sessionStorage.getItem( 'metro-webgpu-error' ) || ''; wlog = sessionStorage.getItem( 'metro-webgpu-log' ) || ''; } catch ( e ) { /* ignore */ }
+		if ( wlog && gr.isWebGPU ) why = '';
 		const gpuMode = gr.isWebGPU ? 'WebGPU' : params.has( 'webgl' ) ? ( why ? `WebGL 2 (WebGPU отключён после ошибки: ${ why })` : 'WebGL 2 (выбран вручную)' ) : 'WebGL 2 (WebGPU недоступен в браузере)';
-		$( 'gpuinfo' ).textContent = `${ gpuMode }${ gr.gpuName ? ' · ' + gr.gpuName : '' } · three.js r${ THREE.REVISION }`;
+		if ( wlog ) $( 'gpuinfo' ).title = wlog;
+		if ( wlog ) console.warn( 'Предыдущие ошибки WebGPU:\n' + wlog );
+		$( 'gpuinfo' ).textContent = ( wlog ? 'Журнал WebGPU: ' + wlog.replace( /\n/g, ' | ' ) + ' — ' : '' ) + `${ gpuMode }${ gr.gpuName ? ' · ' + gr.gpuName : '' } · three.js r${ THREE.REVISION }`;
 
 		setLoading( 0.12, 'Прокладываем тоннели…' );
 		await nextFrame();
